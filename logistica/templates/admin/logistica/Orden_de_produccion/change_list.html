@@ -1,0 +1,153 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+
+<!-- Override extrahead to add Chart.js -->
+{% block extrahead %}
+{{ block.super }}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.bundle.min.js"></script>
+<script src="https://www.chartjs.org/samples/latest/utils.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const ctx = document.getElementById('myChart').getContext('2d');
+
+  // Sample data
+  const chartData = {{ chart_data | safe }};
+
+  // Parse the dates to JS
+  chartData.forEach((d) => {
+    d.x = new Date(d.date);
+  });
+
+  // Render the chart
+  const chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      datasets: [
+        {
+          label: 'Analisis de las ordenes de produccion',
+          data: chartData,
+          backgroundColor: 'rgba(220,20,20,0.5)',
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      scales: {
+        xAxes: [
+          {
+            type: 'time',
+            time: {
+              unit: 'day',
+              round: 'day',
+              displayFormats: {
+                day: 'MMM D',
+              },
+            },
+          },
+        ],
+        yAxes: [
+          {
+            ticks: {
+              beginAtZero: true,
+            },
+          },
+        ],
+      },
+    },
+  });
+});
+</script>
+
+
+<!-- vamos a ver que coño pasa aqui -->
+
+
+<script>
+		const newData = {{ all_data | safe }};
+		const data = newData.map( (el) => el.fields)
+		var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+		var DAYS = Array.from({ length: 31 }, function(v, k) {  return k; } );
+		var color = Chart.helpers.color;
+		var grouped = {}, grouped2 = {}, final = [];
+
+		data.forEach(function (a) {
+				grouped[a.lote] = grouped[a.lote] || [];
+    			grouped[a.lote].push({ fecha_de_emision : a.fecha_de_emision  });
+		});
+		let value = 0;
+		for (var key in grouped){
+			DAYS.forEach(function (b, indexOfDAYS) {
+				grouped2[key] = grouped2[key] || [];
+				grouped2[key][indexOfDAYS] = grouped2[key][indexOfDAYS] || 0;
+				value = indexOfDAYS+1
+    			grouped2[key][indexOfDAYS] =  grouped[key].filter( (el) => el.fecha_de_emision != undefined).filter( (el2) => el2.fecha_de_emision.split("-")[2] == value ).length;
+			});
+			x = Math.floor(Math.random()*256);
+			y = Math.floor(Math.random()*256);
+			z = Math.floor(Math.random()*256);
+			Scolor = "rgb( "+x+" , "+y+" , "+z+" )"
+			final.push({
+				label: "Lote "+key,
+				backgroundColor: color(Scolor).alpha(0.5).rgbString(),
+				borderColor: Scolor,
+				borderWidth: 1,
+				data: grouped2[key]
+			})
+  		}
+
+		var horizontalBarChartData = {
+			labels: DAYS,
+			datasets: final
+
+		};
+
+		window.onload = function() {
+			var ctx = document.getElementById('myChart2').getContext('2d');
+			window.myHorizontalBar = new Chart(ctx, {
+				type: 'horizontalBar',
+				data: horizontalBarChartData,
+				options: {
+					// Elements options apply to all of the options unless overridden in a dataset
+					// In this case, we are setting the border of each horizontal bar to be 2px wide
+					elements: {
+						rectangle: {
+							borderWidth: 2,
+						}
+					},
+					responsive: true,
+					legend: {
+						position: 'right',
+					},
+					lote: {
+						display: true,
+						text: 'Lotes de compras'
+					}
+				}
+			});
+
+		};
+
+		var colorNames = Object.keys(window.chartColors);
+	</script>
+
+
+{% endblock %}
+
+{% block content %}
+<!-- Render our chart -->
+<div style="width: 100%;">
+  <canvas style="margin-bottom: 30px; width: 60%; height: 200px;" id="myChart"></canvas>
+</div>
+<!-- Render the rest of the ChangeList view -->
+
+
+
+
+<div style="width: 100%;">
+  <h1>Evaluación de los lotes de producción elaborados en el mes de Julio</h1>
+  <canvas style="margin-bottom: 30px; width: 60%; height: 250px;" id="myChart2"></canvas>
+</div>
+
+{{ block.super }}
+{% endblock %}
